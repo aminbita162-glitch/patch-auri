@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
@@ -167,8 +167,18 @@ def camera_page():
     return FileResponse("camera.html")
 
 
-@app.get("/scan/{patch_id}", response_class=HTMLResponse)
+@app.get("/scan/{patch_id}")
 def scan_patch(patch_id: str):
+    patch = get_patch_from_db(patch_id)
+
+    if not patch:
+        return RedirectResponse(url=f"/result/{patch_id}", status_code=302)
+
+    return RedirectResponse(url=f"/camera?patch_id={patch_id}", status_code=302)
+
+
+@app.get("/result/{patch_id}", response_class=HTMLResponse)
+def result_page(patch_id: str):
     patch = get_patch_from_db(patch_id)
 
     if patch:
