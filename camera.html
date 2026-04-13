@@ -82,7 +82,7 @@
       details.innerText = `Average color → R:${red} G:${green} B:${blue}`;
 
       if (red > green + 20 && red > blue + 20) {
-        result.innerText = "Attention: Color change detected";
+        result.innerText = "⚠️ A noticeable color change was detected. We recommend consulting a doctor for further evaluation.";
         result.style.color = "#FF9800";
       } else {
         result.innerText = "Normal: No significant color change";
