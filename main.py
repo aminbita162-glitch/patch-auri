@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
 
@@ -18,6 +19,14 @@ class Patch(Base):
     patch_version = Column(String, nullable=False)
     message = Column(String, nullable=False)
     label = Column(String, nullable=False)
+
+
+class PatchCreate(BaseModel):
+    patch_id: str
+    status: str
+    patch_version: str
+    message: str
+    label: str
 
 
 Base.metadata.create_all(bind=engine)
@@ -81,6 +90,74 @@ def home():
     return {
         "message": "Patch-Auri backend is running",
         "usage": "/scan/PATCH-001"
+    }
+
+
+@app.get("/patches")
+def list_patches():
+    db = SessionLocal()
+    patches = db.query(Patch).all()
+
+    result = []
+    for patch in patches:
+        result.append(
+            {
+                "patch_id": patch.patch_id,
+                "status": patch.status,
+                "patch_version": patch.patch_version,
+                "message": patch.message,
+                "label": patch.label
+            }
+        )
+
+    db.close()
+    return result
+
+
+@app.post("/patches")
+def create_patch(patch_data: PatchCreate):
+    db = SessionLocal()
+
+    existing_patch = db.query(Patch).filter(Patch.patch_id == patch_data.patch_id).first()
+    if existing_patch:
+        db.close()
+        raise HTTPException(status_code=400, detail="Patch ID already exists")
+
+    new_patch = Patch(
+        patch_id=patch_data.patch_id,
+        status=patch_data.status,
+        patch_version=patch_data.patch_version,
+        message=patch_data.message,
+        label=patch_data.label
+    )
+
+    db.add(new_patch)
+    db.commit()
+    db.refresh(new_patch)
+    db.close()
+
+    return {
+        "message": "Patch created successfully",
+        "patch_id": new_patch.patch_id
+    }
+
+
+@app.delete("/patches/{patch_id}")
+def delete_patch(patch_id: str):
+    db = SessionLocal()
+    patch = db.query(Patch).filter(Patch.patch_id == patch_id).first()
+
+    if not patch:
+        db.close()
+        raise HTTPException(status_code=404, detail="Patch not found")
+
+    db.delete(patch)
+    db.commit()
+    db.close()
+
+    return {
+        "message": "Patch deleted successfully",
+        "patch_id": patch_id
     }
 
 
