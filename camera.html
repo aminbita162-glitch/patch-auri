@@ -11,6 +11,8 @@
     <h1 style="margin-top:0;">Patch Color Scan</h1>
     <p style="color:#555;">Point the camera at the patch color area</p>
 
+    <div id="patchInfo" style="margin-bottom:14px; font-size:15px; color:#444; font-weight:600;"></div>
+
     <video id="video" autoplay playsinline style="width:100%; border-radius:16px; background:#ddd;"></video>
 
     <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
@@ -30,6 +32,16 @@
     const canvas = document.getElementById("canvas");
     const result = document.getElementById("result");
     const details = document.getElementById("details");
+    const patchInfo = document.getElementById("patchInfo");
+
+    const params = new URLSearchParams(window.location.search);
+    const patchId = params.get("patch_id");
+
+    if (patchId) {
+      patchInfo.innerText = `Patch ID: ${patchId}`;
+    } else {
+      patchInfo.innerText = "Patch ID: Not provided";
+    }
 
     async function startCamera() {
       try {
@@ -79,7 +91,7 @@
       green = Math.round(green / count);
       blue = Math.round(blue / count);
 
-      details.innerText = `Average color → R:${red} G:${green} B:${blue}`;
+      details.innerText = `Patch ID: ${patchId || "Not provided"} | Average color → R:${red} G:${green} B:${blue}`;
 
       if (red > green + 20 && red > blue + 20) {
         result.innerText = "⚠️ A noticeable color change was detected. We recommend consulting a doctor for further evaluation.";
