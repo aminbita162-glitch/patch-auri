@@ -19,7 +19,10 @@ PATCHES = {
 
 @app.get("/")
 def home():
-    return {"message": "Patch-Auri backend is running"}
+    return {
+        "message": "Patch-Auri backend is running",
+        "usage": "/scan/PATCH-001"
+    }
 
 @app.get("/scan/{patch_id}")
 def scan_patch(patch_id: str):
@@ -32,4 +35,10 @@ def scan_patch(patch_id: str):
         "status": "unknown",
         "patch_id": patch_id,
         "message": "Patch not recognized"
+    }
+
+@app.get("/simulate")
+def simulate():
+    return {
+        "info": "Use /scan/PATCH-001 or /scan/PATCH-002 to simulate NFC scans"
     }
