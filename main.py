@@ -1,24 +1,36 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from database import SessionLocal
 
 app = FastAPI()
 
-PATCHES = {
-    "PATCH-001": {
-        "status": "ok",
-        "patch_id": "PATCH-001",
-        "patch_version": "v1",
-        "message": "Patch scanned successfully",
-        "label": "Normal status"
-    },
-    "PATCH-002": {
-        "status": "attention",
-        "patch_id": "PATCH-002",
-        "patch_version": "v1",
-        "message": "Attention needed",
-        "label": "Please review"
+
+def get_patch_from_db(patch_id):
+    db = SessionLocal()
+
+    # فعلاً شبیه‌سازی دیتابیس (مرحله بعدی واقعی میشه)
+    fake_db = {
+        "PATCH-001": {
+            "status": "ok",
+            "patch_id": "PATCH-001",
+            "patch_version": "v1",
+            "message": "Patch scanned successfully",
+            "label": "Normal status"
+        },
+        "PATCH-002": {
+            "status": "attention",
+            "patch_id": "PATCH-002",
+            "patch_version": "v1",
+            "message": "Attention needed",
+            "label": "Please review"
+        }
     }
-}
+
+    patch = fake_db.get(patch_id)
+
+    db.close()
+    return patch
+
 
 @app.get("/")
 def home():
@@ -27,9 +39,10 @@ def home():
         "usage": "/scan/PATCH-001"
     }
 
+
 @app.get("/scan/{patch_id}", response_class=HTMLResponse)
 def scan_patch(patch_id: str):
-    patch = PATCHES.get(patch_id)
+    patch = get_patch_from_db(patch_id)
 
     if patch:
         if patch["status"] == "ok":
@@ -148,11 +161,13 @@ def scan_patch(patch_id: str):
     </html>
     """
 
+
 @app.get("/simulate")
 def simulate():
     return {
         "info": "Use /scan/PATCH-001 or /scan/PATCH-002 to simulate NFC scans"
     }
+
 
 @app.get("/demo", response_class=HTMLResponse)
 def demo():
