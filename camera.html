@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patch Color Scan</title>
+</head>
+<body style="margin:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:#0f1020; color:white; display:flex; align-items:center; justify-content:center; min-height:100vh;">
+
+  <div style="width:90%; max-width:420px; background:white; color:black; border-radius:24px; padding:24px; box-shadow:0 15px 40px rgba(0,0,0,0.35); text-align:center;">
+    <h1 style="margin-top:0;">Patch Color Scan</h1>
+    <p style="color:#555;">Point the camera at the patch color area</p>
+
+    <video id="video" autoplay playsinline style="width:100%; border-radius:16px; background:#ddd;"></video>
+
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+    <div style="margin-top:16px;">
+      <button onclick="captureColor()" style="background:#1e1e2f; color:white; border:none; padding:14px 18px; border-radius:12px; font-size:16px; cursor:pointer;">
+        Scan Color
+      </button>
+    </div>
+
+    <div id="result" style="margin-top:18px; font-size:18px; font-weight:600;"></div>
+    <div id="details" style="margin-top:10px; color:#555; font-size:14px;"></div>
+  </div>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const result = document.getElementById("result");
+    const details = document.getElementById("details");
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false
+        });
+        video.srcObject = stream;
+      } catch (error) {
+        result.innerText = "Camera access failed";
+        result.style.color = "red";
+        details.innerText = "Please allow camera access in the browser.";
+      }
+    }
+
+    function captureColor() {
+      const context = canvas.getContext("2d");
+      canvas.width = video.videoWidth || 320;
+      canvas.height = video.videoHeight || 240;
+
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const centerX = Math.floor(canvas.width / 2);
+      const centerY = Math.floor(canvas.height / 2);
+      const sampleSize = 40;
+
+      const imageData = context.getImageData(
+        centerX - sampleSize / 2,
+        centerY - sampleSize / 2,
+        sampleSize,
+        sampleSize
+      ).data;
+
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+      let count = 0;
+
+      for (let i = 0; i < imageData.length; i += 4) {
+        red += imageData[i];
+        green += imageData[i + 1];
+        blue += imageData[i + 2];
+        count++;
+      }
+
+      red = Math.round(red / count);
+      green = Math.round(green / count);
+      blue = Math.round(blue / count);
+
+      details.innerText = `Average color → R:${red} G:${green} B:${blue}`;
+
+      if (red > green + 20 && red > blue + 20) {
+        result.innerText = "Attention: Color change detected";
+        result.style.color = "#FF9800";
+      } else {
+        result.innerText = "Normal: No significant color change";
+        result.style.color = "#4CAF50";
+      }
+    }
+
+    startCamera();
+  </script>
+</body>
+</html>
