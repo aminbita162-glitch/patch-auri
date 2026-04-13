@@ -1,35 +1,79 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from database import SessionLocal
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import declarative_base
+
+from database import SessionLocal, engine
 
 app = FastAPI()
+Base = declarative_base()
+
+
+class Patch(Base):
+    __tablename__ = "patches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    patch_id = Column(String, unique=True, index=True, nullable=False)
+    status = Column(String, nullable=False)
+    patch_version = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    label = Column(String, nullable=False)
+
+
+Base.metadata.create_all(bind=engine)
+
+
+def seed_default_patches():
+    db = SessionLocal()
+
+    patch_1 = db.query(Patch).filter(Patch.patch_id == "PATCH-001").first()
+    if not patch_1:
+        db.add(
+            Patch(
+                patch_id="PATCH-001",
+                status="ok",
+                patch_version="v1",
+                message="Patch scanned successfully",
+                label="Normal status"
+            )
+        )
+
+    patch_2 = db.query(Patch).filter(Patch.patch_id == "PATCH-002").first()
+    if not patch_2:
+        db.add(
+            Patch(
+                patch_id="PATCH-002",
+                status="attention",
+                patch_version="v1",
+                message="Attention needed",
+                label="Please review"
+            )
+        )
+
+    db.commit()
+    db.close()
+
+
+seed_default_patches()
 
 
 def get_patch_from_db(patch_id):
     db = SessionLocal()
+    patch = db.query(Patch).filter(Patch.patch_id == patch_id).first()
 
-    # فعلاً شبیه‌سازی دیتابیس (مرحله بعدی واقعی میشه)
-    fake_db = {
-        "PATCH-001": {
-            "status": "ok",
-            "patch_id": "PATCH-001",
-            "patch_version": "v1",
-            "message": "Patch scanned successfully",
-            "label": "Normal status"
-        },
-        "PATCH-002": {
-            "status": "attention",
-            "patch_id": "PATCH-002",
-            "patch_version": "v1",
-            "message": "Attention needed",
-            "label": "Please review"
+    if patch:
+        result = {
+            "status": patch.status,
+            "patch_id": patch.patch_id,
+            "patch_version": patch.patch_version,
+            "message": patch.message,
+            "label": patch.label
         }
-    }
-
-    patch = fake_db.get(patch_id)
+        db.close()
+        return result
 
     db.close()
-    return patch
+    return None
 
 
 @app.get("/")
