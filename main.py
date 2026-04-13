@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
@@ -89,7 +89,8 @@ def get_patch_from_db(patch_id):
 def home():
     return {
         "message": "Patch-Auri backend is running",
-        "usage": "/scan/PATCH-001"
+        "usage": "/scan/PATCH-001",
+        "camera": "/camera"
     }
 
 
@@ -159,6 +160,11 @@ def delete_patch(patch_id: str):
         "message": "Patch deleted successfully",
         "patch_id": patch_id
     }
+
+
+@app.get("/camera", response_class=HTMLResponse)
+def camera_page():
+    return FileResponse("camera.html")
 
 
 @app.get("/scan/{patch_id}", response_class=HTMLResponse)
