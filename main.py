@@ -27,19 +27,44 @@ def home():
         "usage": "/scan/PATCH-001"
     }
 
-@app.get("/scan/{patch_id}")
+@app.get("/scan/{patch_id}", response_class=HTMLResponse)
 def scan_patch(patch_id: str):
     patch = PATCHES.get(patch_id)
 
     if patch:
-        return patch
+        color = "#4CAF50" if patch["status"] == "ok" else "#FF9800"
 
-    return {
-        "status": "unknown",
-        "patch_id": patch_id,
-        "message": "Patch not recognized",
-        "label": "Unknown patch"
-    }
+        return f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Patch Result</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 40px;">
+            <h1 style="color:{color};">{patch["label"]}</h1>
+            <p>{patch["message"]}</p>
+            <p><strong>Patch ID:</strong> {patch["patch_id"]}</p>
+            <p><strong>Version:</strong> {patch["patch_version"]}</p>
+        </body>
+        </html>
+        """
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Unknown Patch</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; text-align: center; padding: 40px;">
+        <h1 style="color:red;">Unknown Patch</h1>
+        <p><strong>Patch ID:</strong> {patch_id}</p>
+    </body>
+    </html>
+    """
 
 @app.get("/simulate")
 def simulate():
