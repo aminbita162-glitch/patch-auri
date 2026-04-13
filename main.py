@@ -6,9 +6,10 @@ app = FastAPI()
 def home():
     return {"message": "Patch-Auri backend is running"}
 
-@app.get("/scan")
-def scan_patch():
+@app.get("/scan/{patch_id}")
+def scan_patch(patch_id: str):
     return {
         "status": "ok",
-        "data": "NFC patch scanned successfully"
+        "patch_id": patch_id,
+        "message": "Patch scanned successfully"
     }
