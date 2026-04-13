@@ -32,7 +32,12 @@ def scan_patch(patch_id: str):
     patch = PATCHES.get(patch_id)
 
     if patch:
-        color = "#4CAF50" if patch["status"] == "ok" else "#FF9800"
+        if patch["status"] == "ok":
+            color = "#4CAF50"
+            icon = "✔"
+        else:
+            color = "#FF9800"
+            icon = "⚠"
 
         return f"""
         <!DOCTYPE html>
@@ -44,9 +49,8 @@ def scan_patch(patch_id: str):
         </head>
         <body style="
             margin:0;
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #1e1e2f, #3a3a5f);
-            color: white;
             display:flex;
             align-items:center;
             justify-content:center;
@@ -54,38 +58,52 @@ def scan_patch(patch_id: str):
         ">
             <div style="
                 background:white;
-                color:black;
                 padding:30px;
-                border-radius:20px;
+                border-radius:24px;
                 width:90%;
                 max-width:400px;
                 text-align:center;
-                box-shadow:0 10px 30px rgba(0,0,0,0.3);
+                box-shadow:0 15px 40px rgba(0,0,0,0.4);
             ">
-                <h1 style="color:{color}; margin-bottom:10px;">
+                <div style="
+                    font-size:50px;
+                    margin-bottom:10px;
+                    color:{color};
+                ">
+                    {icon}
+                </div>
+
+                <h1 style="
+                    color:{color};
+                    margin-bottom:10px;
+                ">
                     {patch["label"]}
                 </h1>
 
-                <p style="font-size:16px; margin-bottom:20px;">
+                <p style="
+                    font-size:16px;
+                    margin-bottom:25px;
+                    color:#333;
+                ">
                     {patch["message"]}
                 </p>
 
                 <div style="
                     background:#f5f5f5;
                     padding:15px;
-                    border-radius:10px;
+                    border-radius:12px;
                     margin-bottom:10px;
                 ">
-                    <strong>Patch ID:</strong><br>
+                    <strong>Patch ID</strong><br>
                     {patch["patch_id"]}
                 </div>
 
                 <div style="
                     background:#f5f5f5;
                     padding:15px;
-                    border-radius:10px;
+                    border-radius:12px;
                 ">
-                    <strong>Version:</strong><br>
+                    <strong>Version</strong><br>
                     {patch["patch_version"]}
                 </div>
             </div>
@@ -103,9 +121,8 @@ def scan_patch(patch_id: str):
     </head>
     <body style="
         margin:0;
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         background:#111;
-        color:white;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -113,16 +130,19 @@ def scan_patch(patch_id: str):
     ">
         <div style="
             background:white;
-            color:black;
             padding:30px;
-            border-radius:20px;
+            border-radius:24px;
             width:90%;
             max-width:400px;
             text-align:center;
         ">
+            <div style="font-size:50px; color:red;">❌</div>
+
             <h1 style="color:red;">Unknown Patch</h1>
-            <p><strong>Patch ID:</strong></p>
-            <p>{patch_id}</p>
+
+            <p style="color:#333;">
+                Patch ID: {patch_id}
+            </p>
         </div>
     </body>
     </html>
