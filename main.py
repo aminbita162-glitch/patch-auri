@@ -8,13 +8,15 @@ PATCHES = {
         "status": "ok",
         "patch_id": "PATCH-001",
         "patch_version": "v1",
-        "message": "Patch scanned successfully"
+        "message": "Patch scanned successfully",
+        "label": "Normal status"
     },
     "PATCH-002": {
         "status": "attention",
         "patch_id": "PATCH-002",
         "patch_version": "v1",
-        "message": "Attention needed"
+        "message": "Attention needed",
+        "label": "Please review"
     }
 }
 
@@ -35,7 +37,8 @@ def scan_patch(patch_id: str):
     return {
         "status": "unknown",
         "patch_id": patch_id,
-        "message": "Patch not recognized"
+        "message": "Patch not recognized",
+        "label": "Unknown patch"
     }
 
 @app.get("/simulate")
