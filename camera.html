@@ -29,12 +29,6 @@
       <div id="details" style="margin-top:12px; color:#666; font-size:14px; line-height:1.5;"></div>
       <div id="serverStatus" style="margin-top:12px; font-size:14px; line-height:1.5;"></div>
     </div>
-
-    <div style="margin-top:14px;">
-      <button onclick="resetScan()" style="background:#ececf3; color:#1e1e2f; border:none; padding:12px 16px; border-radius:12px; font-size:15px; cursor:pointer;">
-        Scan Again
-      </button>
-    </div>
   </div>
 
   <script>
@@ -90,11 +84,11 @@
         }
 
         const data = await response.json();
-        serverStatus.innerText = data.message || "Result was sent to the server.";
+        serverStatus.innerText = data.message || "Result saved successfully.";
         serverStatus.style.color = "#2e7d32";
       } catch (error) {
-        serverStatus.innerText = "Local analysis completed. Server save is not available yet.";
-        serverStatus.style.color = "#8a6d3b";
+        serverStatus.innerText = "Result could not be saved.";
+        serverStatus.style.color = "#b26a00";
       }
     }
 
@@ -133,7 +127,7 @@
       blue = Math.round(blue / count);
 
       statusCard.style.display = "block";
-      serverStatus.innerText = "Sending result to server...";
+      serverStatus.innerText = "";
       serverStatus.style.color = "#555";
 
       let detectedStatus = "ok";
@@ -155,7 +149,7 @@
         guidance.innerText = "No significant color change was detected at this time.";
       }
 
-      details.innerText = `Patch ID: ${patchId || "Not provided"} | Average color → R:${red} G:${green} B:${blue}`;
+      details.innerText = `Patch ID: ${patchId || "Not provided"}`;
 
       scanButton.disabled = true;
       scanButton.style.opacity = "0.7";
@@ -172,14 +166,6 @@
 
       scanButton.disabled = false;
       scanButton.style.opacity = "1";
-    }
-
-    function resetScan() {
-      statusCard.style.display = "none";
-      result.innerText = "";
-      guidance.innerText = "";
-      details.innerText = "";
-      serverStatus.innerText = "";
     }
 
     startCamera();
