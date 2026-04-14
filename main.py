@@ -35,8 +35,7 @@ Base.metadata.create_all(bind=engine)
 def seed_default_patches():
     db = SessionLocal()
 
-    patch_1 = db.query(Patch).filter(Patch.patch_id == "PATCH-001").first()
-    if not patch_1:
+    if not db.query(Patch).filter(Patch.patch_id == "PATCH-001").first():
         db.add(
             Patch(
                 patch_id="PATCH-001",
@@ -47,8 +46,7 @@ def seed_default_patches():
             )
         )
 
-    patch_2 = db.query(Patch).filter(Patch.patch_id == "PATCH-002").first()
-    if not patch_2:
+    if not db.query(Patch).filter(Patch.patch_id == "PATCH-002").first():
         db.add(
             Patch(
                 patch_id="PATCH-002",
@@ -119,18 +117,11 @@ def list_patches():
 def create_patch(patch_data: PatchCreate):
     db = SessionLocal()
 
-    existing_patch = db.query(Patch).filter(Patch.patch_id == patch_data.patch_id).first()
-    if existing_patch:
+    if db.query(Patch).filter(Patch.patch_id == patch_data.patch_id).first():
         db.close()
         raise HTTPException(status_code=400, detail="Patch ID already exists")
 
-    new_patch = Patch(
-        patch_id=patch_data.patch_id,
-        status=patch_data.status,
-        patch_version=patch_data.patch_version,
-        message=patch_data.message,
-        label=patch_data.label
-    )
+    new_patch = Patch(**patch_data.dict())
 
     db.add(new_patch)
     db.commit()
@@ -215,46 +206,18 @@ def result_page(patch_id: str):
                 text-align:center;
                 box-shadow:0 15px 40px rgba(0,0,0,0.4);
             ">
-                <div style="
-                    font-size:50px;
-                    margin-bottom:10px;
-                    color:{color};
-                ">
-                    {icon}
+                <div style="font-size:50px; color:{color};">{icon}</div>
+
+                <h1 style="color:{color};">{patch["label"]}</h1>
+
+                <p style="color:#333;">{patch["message"]}</p>
+
+                <div style="background:#f5f5f5; padding:15px; border-radius:12px;">
+                    <strong>Patch ID</strong><br>{patch["patch_id"]}
                 </div>
 
-                <h1 style="
-                    color:{color};
-                    margin-bottom:10px;
-                ">
-                    {patch["label"]}
-                </h1>
-
-                <p style="
-                    font-size:16px;
-                    margin-bottom:25px;
-                    color:#333;
-                ">
-                    {patch["message"]}
-                </p>
-
-                <div style="
-                    background:#f5f5f5;
-                    padding:15px;
-                    border-radius:12px;
-                    margin-bottom:10px;
-                ">
-                    <strong>Patch ID</strong><br>
-                    {patch["patch_id"]}
-                </div>
-
-                <div style="
-                    background:#f5f5f5;
-                    padding:15px;
-                    border-radius:12px;
-                ">
-                    <strong>Version</strong><br>
-                    {patch["patch_version"]}
+                <div style="background:#f5f5f5; padding:15px; border-radius:12px; margin-top:10px;">
+                    <strong>Version</strong><br>{patch["patch_version"]}
                 </div>
             </div>
         </body>
@@ -263,37 +226,10 @@ def result_page(patch_id: str):
 
     return f"""
     <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Unknown Patch</title>
-    </head>
-    <body style="
-        margin:0;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        background:#111;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        height:100vh;
-    ">
-        <div style="
-            background:white;
-            padding:30px;
-            border-radius:24px;
-            width:90%;
-            max-width:400px;
-            text-align:center;
-        ">
-            <div style="font-size:50px; color:red;">❌</div>
-
-            <h1 style="color:red;">Unknown Patch</h1>
-
-            <p style="color:#333;">
-                Patch ID: {patch_id}
-            </p>
-        </div>
+    <html>
+    <body style="background:#111; color:white; text-align:center; padding:50px;">
+        <h1>Unknown Patch</h1>
+        <p>{patch_id}</p>
     </body>
     </html>
     """
@@ -301,24 +237,16 @@ def result_page(patch_id: str):
 
 @app.get("/simulate")
 def simulate():
-    return {
-        "info": "Use /scan/PATCH-001 or /scan/PATCH-002 to simulate NFC scans"
-    }
+    return {"info": "Use /scan/PATCH-001"}
 
 
 @app.get("/demo", response_class=HTMLResponse)
 def demo():
     return """
     <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Patch-Auri Demo</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; padding: 24px;">
+    <html>
+    <body style="font-family: Arial; padding:20px;">
         <h1>Patch-Auri Demo</h1>
-        <p>Manual patch scan simulation</p>
         <ul>
             <li><a href="/scan/PATCH-001">Scan PATCH-001</a></li>
             <li><a href="/scan/PATCH-002">Scan PATCH-002</a></li>
@@ -326,4 +254,4 @@ def demo():
         </ul>
     </body>
     </html>
-    
+    """
