@@ -18,7 +18,7 @@
     <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
     <div style="margin-top:16px;">
-      <button onclick="captureColor()" style="background:#1e1e2f; color:white; border:none; padding:14px 18px; border-radius:12px; font-size:16px; cursor:pointer;">
+      <button id="scanButton" onclick="captureColor()" style="background:#1e1e2f; color:white; border:none; padding:14px 18px; border-radius:12px; font-size:16px; cursor:pointer;">
         Scan Color
       </button>
     </div>
@@ -27,6 +27,7 @@
       <div id="result" style="font-size:20px; font-weight:700; line-height:1.4;"></div>
       <div id="guidance" style="margin-top:10px; font-size:15px; line-height:1.6; color:#333;"></div>
       <div id="details" style="margin-top:12px; color:#666; font-size:14px; line-height:1.5;"></div>
+      <div id="serverStatus" style="margin-top:12px; font-size:14px; line-height:1.5;"></div>
     </div>
 
     <div style="margin-top:14px;">
@@ -43,7 +44,9 @@
     const result = document.getElementById("result");
     const guidance = document.getElementById("guidance");
     const details = document.getElementById("details");
+    const serverStatus = document.getElementById("serverStatus");
     const patchInfo = document.getElementById("patchInfo");
+    const scanButton = document.getElementById("scanButton");
 
     const params = new URLSearchParams(window.location.search);
     const patchId = params.get("patch_id");
@@ -68,10 +71,34 @@
         result.style.color = "red";
         guidance.innerText = "Please allow camera access in the browser to continue.";
         details.innerText = `Patch ID: ${patchId || "Not provided"}`;
+        serverStatus.innerText = "";
       }
     }
 
-    function captureColor() {
+    async function sendResultToServer(payload) {
+      try {
+        const response = await fetch("/scan-result", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error("Server response was not successful");
+        }
+
+        const data = await response.json();
+        serverStatus.innerText = data.message || "Result was sent to the server.";
+        serverStatus.style.color = "#2e7d32";
+      } catch (error) {
+        serverStatus.innerText = "Local analysis completed. Server save is not available yet.";
+        serverStatus.style.color = "#8a6d3b";
+      }
+    }
+
+    async function captureColor() {
       const context = canvas.getContext("2d");
       canvas.width = video.videoWidth || 320;
       canvas.height = video.videoHeight || 240;
@@ -106,12 +133,21 @@
       blue = Math.round(blue / count);
 
       statusCard.style.display = "block";
+      serverStatus.innerText = "Sending result to server...";
+      serverStatus.style.color = "#555";
+
+      let detectedStatus = "ok";
+      let detectedLabel = "Normal result";
+      let detectedMessage = "No significant color change was detected at this time.";
 
       if (red > green + 20 && red > blue + 20) {
         statusCard.style.background = "#fff8ef";
         result.innerText = "⚠️ Color change detected";
         result.style.color = "#FF9800";
         guidance.innerText = "A noticeable color change was detected. We recommend consulting a doctor for further evaluation.";
+        detectedStatus = "attention";
+        detectedLabel = "Color change detected";
+        detectedMessage = "A noticeable color change was detected. We recommend consulting a doctor for further evaluation.";
       } else {
         statusCard.style.background = "#f3fbf4";
         result.innerText = "✅ Normal result";
@@ -120,6 +156,22 @@
       }
 
       details.innerText = `Patch ID: ${patchId || "Not provided"} | Average color → R:${red} G:${green} B:${blue}`;
+
+      scanButton.disabled = true;
+      scanButton.style.opacity = "0.7";
+
+      await sendResultToServer({
+        patch_id: patchId,
+        status: detectedStatus,
+        label: detectedLabel,
+        message: detectedMessage,
+        red: red,
+        green: green,
+        blue: blue
+      });
+
+      scanButton.disabled = false;
+      scanButton.style.opacity = "1";
     }
 
     function resetScan() {
@@ -127,6 +179,7 @@
       result.innerText = "";
       guidance.innerText = "";
       details.innerText = "";
+      serverStatus.innerText = "";
     }
 
     startCamera();
