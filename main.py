@@ -1,7 +1,10 @@
+from datetime import datetime
+from typing import Optional
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base
 
 from database import SessionLocal, engine
@@ -21,12 +24,36 @@ class Patch(Base):
     label = Column(String, nullable=False)
 
 
+class ScanResultRecord(Base):
+    __tablename__ = "scan_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    patch_id = Column(String, index=True, nullable=True)
+    status = Column(String, nullable=False)
+    label = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    red = Column(Integer, nullable=False)
+    green = Column(Integer, nullable=False)
+    blue = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class PatchCreate(BaseModel):
     patch_id: str
     status: str
     patch_version: str
     message: str
     label: str
+
+
+class ScanResultCreate(BaseModel):
+    patch_id: Optional[str] = None
+    status: str
+    label: str
+    message: str
+    red: int
+    green: int
+    blue: int
 
 
 Base.metadata.create_all(bind=engine)
@@ -64,7 +91,7 @@ def seed_default_patches():
 seed_default_patches()
 
 
-def get_patch_from_db(patch_id):
+def get_patch_from_db(patch_id: str):
     db = SessionLocal()
     patch = db.query(Patch).filter(Patch.patch_id == patch_id).first()
 
@@ -150,6 +177,31 @@ def delete_patch(patch_id: str):
     return {
         "message": "Patch deleted successfully",
         "patch_id": patch_id
+    }
+
+
+@app.post("/scan-result")
+def save_scan_result(scan_result: ScanResultCreate):
+    db = SessionLocal()
+
+    new_result = ScanResultRecord(
+        patch_id=scan_result.patch_id,
+        status=scan_result.status,
+        label=scan_result.label,
+        message=scan_result.message,
+        red=scan_result.red,
+        green=scan_result.green,
+        blue=scan_result.blue
+    )
+
+    db.add(new_result)
+    db.commit()
+    db.refresh(new_result)
+    db.close()
+
+    return {
+        "message": "Scan result saved successfully",
+        "result_id": new_result.id
     }
 
 
