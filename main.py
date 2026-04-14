@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, DateTime
@@ -36,14 +36,6 @@ class ScanResultRecord(Base):
     green = Column(Integer, nullable=False)
     blue = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-
-
-class PatchCreate(BaseModel):
-    patch_id: str
-    status: str
-    patch_version: str
-    message: str
-    label: str
 
 
 class ScanResultCreate(BaseModel):
@@ -116,67 +108,6 @@ def home():
         "message": "Patch-Auri backend is running",
         "usage": "/scan/PATCH-001",
         "camera": "/camera"
-    }
-
-
-@app.get("/patches")
-def list_patches():
-    db = SessionLocal()
-    patches = db.query(Patch).all()
-
-    result = []
-    for patch in patches:
-        result.append(
-            {
-                "patch_id": patch.patch_id,
-                "status": patch.status,
-                "patch_version": patch.patch_version,
-                "message": patch.message,
-                "label": patch.label
-            }
-        )
-
-    db.close()
-    return result
-
-
-@app.post("/patches")
-def create_patch(patch_data: PatchCreate):
-    db = SessionLocal()
-
-    if db.query(Patch).filter(Patch.patch_id == patch_data.patch_id).first():
-        db.close()
-        raise HTTPException(status_code=400, detail="Patch ID already exists")
-
-    new_patch = Patch(**patch_data.dict())
-
-    db.add(new_patch)
-    db.commit()
-    db.refresh(new_patch)
-    db.close()
-
-    return {
-        "message": "Patch created successfully",
-        "patch_id": new_patch.patch_id
-    }
-
-
-@app.delete("/patches/{patch_id}")
-def delete_patch(patch_id: str):
-    db = SessionLocal()
-    patch = db.query(Patch).filter(Patch.patch_id == patch_id).first()
-
-    if not patch:
-        db.close()
-        raise HTTPException(status_code=404, detail="Patch not found")
-
-    db.delete(patch)
-    db.commit()
-    db.close()
-
-    return {
-        "message": "Patch deleted successfully",
-        "patch_id": patch_id
     }
 
 
@@ -282,28 +213,6 @@ def result_page(patch_id: str):
     <body style="background:#111; color:white; text-align:center; padding:50px;">
         <h1>Unknown Patch</h1>
         <p>{patch_id}</p>
-    </body>
-    </html>
-    """
-
-
-@app.get("/simulate")
-def simulate():
-    return {"info": "Use /scan/PATCH-001"}
-
-
-@app.get("/demo", response_class=HTMLResponse)
-def demo():
-    return """
-    <!DOCTYPE html>
-    <html>
-    <body style="font-family: Arial; padding:20px;">
-        <h1>Patch-Auri Demo</h1>
-        <ul>
-            <li><a href="/scan/PATCH-001">Scan PATCH-001</a></li>
-            <li><a href="/scan/PATCH-002">Scan PATCH-002</a></li>
-            <li><a href="/scan/PATCH-999">Scan PATCH-999</a></li>
-        </ul>
     </body>
     </html>
     """
