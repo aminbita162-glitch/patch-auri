@@ -58,10 +58,10 @@ def seed_default_patches():
         db.add(
             Patch(
                 patch_id="PATCH-001",
-                status="ok",
+                status="level_1",
                 patch_version="v1",
-                message="Patch scanned successfully",
-                label="Normal status"
+                message="Patch is ready for scan.",
+                label="Level 1 - Normal"
             )
         )
 
@@ -69,10 +69,10 @@ def seed_default_patches():
         db.add(
             Patch(
                 patch_id="PATCH-002",
-                status="attention",
+                status="level_2",
                 patch_version="v1",
-                message="Attention needed",
-                label="Please review"
+                message="Patch is ready for monitoring flow.",
+                label="Level 2 - Monitor"
             )
         )
 
@@ -156,12 +156,28 @@ def result_page(patch_id: str):
     patch = get_patch_from_db(patch_id)
 
     if patch:
-        if patch["status"] == "ok":
-            color = "#4CAF50"
-            icon = "✔"
-        else:
-            color = "#FF9800"
-            icon = "⚠"
+        status_styles = {
+            "level_1": {
+                "color": "#2e7d32",
+                "icon": "🟢"
+            },
+            "level_2": {
+                "color": "#c49000",
+                "icon": "🟡"
+            },
+            "level_3": {
+                "color": "#d32f2f",
+                "icon": "🔴"
+            }
+        }
+
+        style = status_styles.get(
+            patch["status"],
+            {
+                "color": "#666666",
+                "icon": "ℹ️"
+            }
+        )
 
         return f"""
         <!DOCTYPE html>
@@ -173,33 +189,58 @@ def result_page(patch_id: str):
         </head>
         <body style="
             margin:0;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #1e1e2f, #3a3a5f);
+            font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+            background:linear-gradient(135deg, #1e1e2f, #3a3a5f);
             display:flex;
             align-items:center;
             justify-content:center;
-            height:100vh;
+            min-height:100vh;
+            padding:20px;
+            box-sizing:border-box;
         ">
             <div style="
                 background:white;
                 padding:30px;
                 border-radius:24px;
                 width:90%;
-                max-width:400px;
+                max-width:420px;
                 text-align:center;
                 box-shadow:0 15px 40px rgba(0,0,0,0.4);
             ">
-                <div style="font-size:50px; color:{color};">{icon}</div>
+                <div style="font-size:48px; margin-bottom:10px;">{style["icon"]}</div>
 
-                <h1 style="color:{color};">{patch["label"]}</h1>
+                <h1 style="
+                    color:{style["color"]};
+                    margin:0 0 12px 0;
+                    font-size:30px;
+                    line-height:1.3;
+                ">
+                    {patch["label"]}
+                </h1>
 
-                <p style="color:#333;">{patch["message"]}</p>
+                <p style="
+                    color:#333;
+                    font-size:16px;
+                    line-height:1.7;
+                    margin:0 0 20px 0;
+                ">
+                    {patch["message"]}
+                </p>
 
-                <div style="background:#f5f5f5; padding:15px; border-radius:12px;">
+                <div style="
+                    background:#f5f5f5;
+                    padding:15px;
+                    border-radius:12px;
+                    margin-bottom:10px;
+                ">
                     <strong>Patch ID</strong><br>{patch["patch_id"]}
                 </div>
 
-                <div style="background:#f5f5f5; padding:15px; border-radius:12px; margin-top:10px;">
+                <div style="
+                    background:#f5f5f5;
+                    padding:15px;
+                    border-radius:12px;
+                ">
                     <strong>Version</strong><br>{patch["patch_version"]}
                 </div>
             </div>
@@ -209,10 +250,35 @@ def result_page(patch_id: str):
 
     return f"""
     <!DOCTYPE html>
-    <html>
-    <body style="background:#111; color:white; text-align:center; padding:50px;">
-        <h1>Unknown Patch</h1>
-        <p>{patch_id}</p>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Unknown Patch</title>
+    </head>
+    <body style="
+        margin:0;
+        font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+        background:#111;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        min-height:100vh;
+        padding:20px;
+        box-sizing:border-box;
+    ">
+        <div style="
+            background:white;
+            padding:30px;
+            border-radius:24px;
+            width:90%;
+            max-width:420px;
+            text-align:center;
+        ">
+            <div style="font-size:48px; margin-bottom:10px;">❌</div>
+            <h1 style="color:#d32f2f; margin:0 0 12px 0;">Unknown Patch</h1>
+            <p style="color:#333; margin:0;">Patch ID: {patch_id}</p>
+        </div>
     </body>
     </html>
     """
