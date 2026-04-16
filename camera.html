@@ -127,24 +127,27 @@
       let title = "🟢 Level 1 - Normal";
       let titleColor = "#2e7d32";
       let cardColor = "#f3fbf4";
-      let guidanceText = "Result is within the normal range.";
+      let guidanceText = "No action is required at this time.";
+      let disclaimerText = "This result is for awareness only and is not a medical diagnosis.";
 
       if (score > 40) {
         status = "level_3";
         label = "Level 3 - Consult Doctor";
-        message = "The observed change is above the defined threshold. This system is not a diagnostic tool, but further medical review is recommended.";
+        message = "The observed change is above the defined threshold.";
         title = "🔴 Level 3 - Consult Doctor";
         titleColor = "#d32f2f";
         cardColor = "#fff3f3";
-        guidanceText = "The observed change is above the defined threshold. Further medical review is recommended.";
+        guidanceText = "Please seek further medical review.";
+        disclaimerText = "This result is an early warning indication only and is not a medical diagnosis.";
       } else if (score > 20) {
         status = "level_2";
         label = "Level 2 - Monitor";
-        message = "A change was observed above the baseline. Repeat the scan and continue monitoring.";
+        message = "A change was observed above the baseline.";
         title = "🟡 Level 2 - Monitor";
         titleColor = "#c49000";
         cardColor = "#fffbe6";
-        guidanceText = "A change was observed. Repeat the scan and continue monitoring.";
+        guidanceText = "Repeat the scan and continue monitoring.";
+        disclaimerText = "This result is for awareness and follow-up only and is not a medical diagnosis.";
       }
 
       result.innerText = title;
@@ -152,7 +155,7 @@
       guidance.innerText = guidanceText;
       statusCard.style.background = cardColor;
       details.innerText = `Patch ID: ${patchId || "Not provided"}`;
-      disclaimer.innerText = "This result is an early warning indication only and is not a medical diagnosis.";
+      disclaimer.innerText = disclaimerText;
 
       scanButton.disabled = true;
       scanButton.style.opacity = "0.7";
