@@ -4,6 +4,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Patch Scan</title>
+  <style>
+    .guide-frame {
+      position: relative;
+      width: 170px;
+      height: 170px;
+      border: 3px solid rgba(255, 255, 255, 0.95);
+      border-radius: 22px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(120, 255, 180, 0.95);
+      box-shadow: 0 0 12px rgba(120, 255, 180, 0.9);
+      top: 14px;
+      opacity: 0;
+    }
+
+    .guide-frame.scanning .scan-line {
+      opacity: 1;
+      animation: scanMove 1.4s linear infinite;
+    }
+
+    @keyframes scanMove {
+      0% {
+        top: 14px;
+      }
+      50% {
+        top: 82px;
+      }
+      100% {
+        top: 150px;
+      }
+    }
+  </style>
 </head>
 <body style="margin:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:#0f1020; color:white; display:flex; align-items:center; justify-content:center; min-height:100vh;">
 
@@ -24,13 +64,9 @@
         justify-content:center;
         pointer-events:none;
       ">
-        <div style="
-          width:170px;
-          height:170px;
-          border:3px solid rgba(255,255,255,0.95);
-          border-radius:22px;
-          box-shadow:0 0 0 9999px rgba(0,0,0,0.18);
-        "></div>
+        <div id="guideFrame" class="guide-frame">
+          <div class="scan-line"></div>
+        </div>
       </div>
     </div>
 
@@ -66,6 +102,7 @@
     const serverStatus = document.getElementById("serverStatus");
     const patchInfo = document.getElementById("patchInfo");
     const scanButton = document.getElementById("scanButton");
+    const guideFrame = document.getElementById("guideFrame");
 
     const params = new URLSearchParams(window.location.search);
     const patchId = params.get("patch_id");
@@ -114,6 +151,7 @@
       scanButton.disabled = true;
       scanButton.style.opacity = "0.7";
       scanButton.innerText = "Scanning...";
+      guideFrame.classList.add("scanning");
 
       statusCard.style.display = "block";
       statusCard.style.background = "#f7f7f7";
@@ -123,6 +161,8 @@
       details.innerText = `Patch ID: ${patchId || "Not provided"}`;
       disclaimer.innerText = "";
       serverStatus.innerText = "";
+
+      await new Promise(resolve => setTimeout(resolve, 900));
 
       const context = canvas.getContext("2d");
       canvas.width = video.videoWidth || 320;
@@ -200,6 +240,7 @@
         blue: b
       });
 
+      guideFrame.classList.remove("scanning");
       scanButton.disabled = false;
       scanButton.style.opacity = "1";
       scanButton.innerText = "Scan";
