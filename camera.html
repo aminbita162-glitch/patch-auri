@@ -58,8 +58,8 @@
         statusCard.style.display = "block";
         statusCard.style.background = "#fff5f5";
         result.innerText = "Camera access failed";
-        result.style.color = "red";
-        guidance.innerText = "Please allow camera access.";
+        result.style.color = "#d32f2f";
+        guidance.innerText = "Please allow camera access to continue.";
         details.innerText = `Patch ID: ${patchId || "Not provided"}`;
         serverStatus.innerText = "";
       }
@@ -97,7 +97,10 @@
 
       const data = context.getImageData(cx - size / 2, cy - size / 2, size, size).data;
 
-      let r = 0, g = 0, b = 0, count = 0;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let count = 0;
 
       for (let i = 0; i < data.length; i += 4) {
         r += data[i];
@@ -110,37 +113,41 @@
       g = Math.round(g / count);
       b = Math.round(b / count);
 
+      const score = Math.round(r - (g + b) / 2);
+
       statusCard.style.display = "block";
+      serverStatus.innerText = "";
 
-      let score = r - (g + b) / 2;
-
-      let status = "ok";
-      let label = "Normal";
-      let message = "No significant change detected.";
+      let status = "level_1";
+      let label = "Level 1 - Normal";
+      let message = "The observed change is within the normal range.";
+      let title = "🟢 Level 1 - Normal";
+      let titleColor = "#2e7d32";
+      let cardColor = "#f3fbf4";
+      let guidanceText = "Result is within the normal range.";
 
       if (score > 40) {
-        statusCard.style.background = "#fff3e0";
-        result.innerText = "⚠️ Attention";
-        result.style.color = "#FF9800";
-        guidance.innerText = "Please monitor and consider consulting a professional.";
-        status = "attention";
-        label = "Attention";
-        message = "Elevated signal detected.";
+        status = "level_3";
+        label = "Level 3 - Consult Doctor";
+        message = "The observed change is above the defined threshold. This system is not a diagnostic tool, but further medical review is recommended.";
+        title = "🔴 Level 3 - Consult Doctor";
+        titleColor = "#d32f2f";
+        cardColor = "#fff3f3";
+        guidanceText = "The observed change is above the defined threshold. Further medical review is recommended.";
       } else if (score > 20) {
-        statusCard.style.background = "#fffbe6";
-        result.innerText = "🟡 Monitor";
-        result.style.color = "#FFC107";
-        guidance.innerText = "Repeat the scan later for confirmation.";
-        status = "monitor";
-        label = "Monitor";
-        message = "Moderate change detected.";
-      } else {
-        statusCard.style.background = "#f3fbf4";
-        result.innerText = "✅ Normal";
-        result.style.color = "#4CAF50";
-        guidance.innerText = "No significant change at this time.";
+        status = "level_2";
+        label = "Level 2 - Monitor";
+        message = "A change was observed above the baseline. Repeat the scan and continue monitoring.";
+        title = "🟡 Level 2 - Monitor";
+        titleColor = "#c49000";
+        cardColor = "#fffbe6";
+        guidanceText = "A change was observed. Repeat the scan and continue monitoring.";
       }
 
+      result.innerText = title;
+      result.style.color = titleColor;
+      guidance.innerText = guidanceText;
+      statusCard.style.background = cardColor;
       details.innerText = `Patch ID: ${patchId || "Not provided"}`;
 
       scanButton.disabled = true;
