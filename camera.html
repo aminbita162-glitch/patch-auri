@@ -27,6 +27,7 @@
       <div id="result" style="font-size:20px; font-weight:700; line-height:1.4;"></div>
       <div id="guidance" style="margin-top:10px; font-size:15px; line-height:1.6; color:#333;"></div>
       <div id="details" style="margin-top:12px; color:#666; font-size:14px; line-height:1.5;"></div>
+      <div id="disclaimer" style="margin-top:12px; color:#666; font-size:13px; line-height:1.6;"></div>
       <div id="serverStatus" style="margin-top:12px; font-size:14px; line-height:1.5;"></div>
     </div>
   </div>
@@ -38,6 +39,7 @@
     const result = document.getElementById("result");
     const guidance = document.getElementById("guidance");
     const details = document.getElementById("details");
+    const disclaimer = document.getElementById("disclaimer");
     const serverStatus = document.getElementById("serverStatus");
     const patchInfo = document.getElementById("patchInfo");
     const scanButton = document.getElementById("scanButton");
@@ -61,6 +63,7 @@
         result.style.color = "#d32f2f";
         guidance.innerText = "Please allow camera access to continue.";
         details.innerText = `Patch ID: ${patchId || "Not provided"}`;
+        disclaimer.innerText = "";
         serverStatus.innerText = "";
       }
     }
@@ -124,16 +127,18 @@
       let title = "🟢 Level 1 - Normal";
       let titleColor = "#2e7d32";
       let cardColor = "#f3fbf4";
-      let guidanceText = "Result is within the normal range.";
+      let guidanceText = "The observed change is within the normal range.";
+      let disclaimerText = "This result is for awareness only and is not a medical diagnosis.";
 
       if (score > 40) {
         status = "level_3";
         label = "Level 3 - Consult Doctor";
-        message = "The observed change is above the defined threshold. This system is not a diagnostic tool, but further medical review is recommended.";
+        message = "The observed change is above the defined threshold. This result is not a medical diagnosis. Further medical review is recommended.";
         title = "🔴 Level 3 - Consult Doctor";
         titleColor = "#d32f2f";
         cardColor = "#fff3f3";
-        guidanceText = "The observed change is above the defined threshold. Further medical review is recommended.";
+        guidanceText = "The observed change is above the defined threshold. Please seek further medical review.";
+        disclaimerText = "This result is an early warning indication only and is not a medical diagnosis.";
       } else if (score > 20) {
         status = "level_2";
         label = "Level 2 - Monitor";
@@ -142,13 +147,15 @@
         titleColor = "#c49000";
         cardColor = "#fffbe6";
         guidanceText = "A change was observed. Repeat the scan and continue monitoring.";
+        disclaimerText = "This result is for awareness and follow-up only and is not a medical diagnosis.";
       }
 
       result.innerText = title;
       result.style.color = titleColor;
       guidance.innerText = guidanceText;
-      statusCard.style.background = cardColor;
       details.innerText = `Patch ID: ${patchId || "Not provided"}`;
+      disclaimer.innerText = disclaimerText;
+      statusCard.style.background = cardColor;
 
       scanButton.disabled = true;
       scanButton.style.opacity = "0.7";
