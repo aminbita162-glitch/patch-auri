@@ -147,6 +147,32 @@
       }
     }
 
+    function getGuideSampleArea() {
+      const videoRect = video.getBoundingClientRect();
+      const guideRect = guideFrame.getBoundingClientRect();
+
+      const scaleX = canvas.width / videoRect.width;
+      const scaleY = canvas.height / videoRect.height;
+
+      const guideX = (guideRect.left - videoRect.left) * scaleX;
+      const guideY = (guideRect.top - videoRect.top) * scaleY;
+      const guideWidth = guideRect.width * scaleX;
+      const guideHeight = guideRect.height * scaleY;
+
+      const sampleWidth = Math.max(40, Math.round(guideWidth * 0.45));
+      const sampleHeight = Math.max(40, Math.round(guideHeight * 0.45));
+
+      const sampleX = Math.round(guideX + (guideWidth - sampleWidth) / 2);
+      const sampleY = Math.round(guideY + (guideHeight - sampleHeight) / 2);
+
+      return {
+        x: Math.max(0, sampleX),
+        y: Math.max(0, sampleY),
+        width: Math.min(sampleWidth, canvas.width),
+        height: Math.min(sampleHeight, canvas.height)
+      };
+    }
+
     async function captureColor() {
       scanButton.disabled = true;
       scanButton.style.opacity = "0.7";
@@ -170,11 +196,13 @@
 
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const cx = Math.floor(canvas.width / 2);
-      const cy = Math.floor(canvas.height / 2);
-      const size = 40;
-
-      const data = context.getImageData(cx - size / 2, cy - size / 2, size, size).data;
+      const sampleArea = getGuideSampleArea();
+      const data = context.getImageData(
+        sampleArea.x,
+        sampleArea.y,
+        sampleArea.width,
+        sampleArea.height
+      ).data;
 
       let r = 0;
       let g = 0;
@@ -227,7 +255,7 @@
       result.innerText = title;
       result.style.color = titleColor;
       guidance.innerText = guidanceText;
-      details.innerText = `Patch ID: ${patchId || "Not provided"}`;
+      details.innerText = `Patch ID: ${patchId || "Not provided"} | Sample area inside guide box`;
       disclaimer.innerText = disclaimerText;
 
       await sendResultToServer({
