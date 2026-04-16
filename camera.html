@@ -13,9 +13,32 @@
 
     <div id="patchInfo" style="margin-bottom:14px; font-size:15px; color:#444; font-weight:600;"></div>
 
-    <video id="video" autoplay playsinline style="width:100%; border-radius:16px; background:#ddd;"></video>
+    <div style="position:relative; width:100%;">
+      <video id="video" autoplay playsinline style="width:100%; border-radius:16px; background:#ddd; display:block;"></video>
+
+      <div style="
+        position:absolute;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        pointer-events:none;
+      ">
+        <div style="
+          width:120px;
+          height:120px;
+          border:3px solid rgba(255,255,255,0.95);
+          border-radius:18px;
+          box-shadow:0 0 0 9999px rgba(0,0,0,0.18);
+        "></div>
+      </div>
+    </div>
 
     <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+    <div style="margin-top:12px; font-size:13px; color:#666;">
+      Keep the patch detection area inside the guide box
+    </div>
 
     <div style="margin-top:16px;">
       <button id="scanButton" onclick="captureColor()" style="background:#1e1e2f; color:white; border:none; padding:14px 18px; border-radius:12px; font-size:16px; cursor:pointer;">
