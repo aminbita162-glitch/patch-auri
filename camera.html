@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Patch Color Scan</title>
+  <title>Patch Scan</title>
 </head>
 <body style="margin:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:#0f1020; color:white; display:flex; align-items:center; justify-content:center; min-height:100vh;">
 
   <div style="width:90%; max-width:420px; background:white; color:black; border-radius:24px; padding:24px; box-shadow:0 15px 40px rgba(0,0,0,0.35); text-align:center;">
-    <h1 style="margin-top:0; margin-bottom:10px;">Patch Color Scan</h1>
-    <p style="color:#555; margin-top:0;">Point the camera at the patch color area</p>
+    <h1 style="margin-top:0; margin-bottom:10px;">Patch Scan</h1>
+    <p style="color:#555; margin-top:0;">Align the camera with the patch detection area</p>
 
     <div id="patchInfo" style="margin-bottom:14px; font-size:15px; color:#444; font-weight:600;"></div>
 
@@ -19,7 +19,7 @@
 
     <div style="margin-top:16px;">
       <button id="scanButton" onclick="captureColor()" style="background:#1e1e2f; color:white; border:none; padding:14px 18px; border-radius:12px; font-size:16px; cursor:pointer;">
-        Scan Color
+        Scan
       </button>
     </div>
 
@@ -45,11 +45,7 @@
     const params = new URLSearchParams(window.location.search);
     const patchId = params.get("patch_id");
 
-    if (patchId) {
-      patchInfo.innerText = `Patch ID: ${patchId}`;
-    } else {
-      patchInfo.innerText = "Patch ID: Not provided";
-    }
+    patchInfo.innerText = patchId ? `Patch ID: ${patchId}` : "Patch ID: Not provided";
 
     async function startCamera() {
       try {
@@ -63,7 +59,7 @@
         statusCard.style.background = "#fff5f5";
         result.innerText = "Camera access failed";
         result.style.color = "red";
-        guidance.innerText = "Please allow camera access in the browser to continue.";
+        guidance.innerText = "Please allow camera access.";
         details.innerText = `Patch ID: ${patchId || "Not provided"}`;
         serverStatus.innerText = "";
       }
@@ -73,21 +69,17 @@
       try {
         const response = await fetch("/scan-result", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
 
-        if (!response.ok) {
-          throw new Error("Server response was not successful");
-        }
+        if (!response.ok) throw new Error();
 
         const data = await response.json();
-        serverStatus.innerText = data.message || "Result saved successfully.";
+        serverStatus.innerText = data.message || "Saved";
         serverStatus.style.color = "#2e7d32";
-      } catch (error) {
-        serverStatus.innerText = "Result could not be saved.";
+      } catch {
+        serverStatus.innerText = "Not saved";
         serverStatus.style.color = "#b26a00";
       }
     }
@@ -99,54 +91,54 @@
 
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const centerX = Math.floor(canvas.width / 2);
-      const centerY = Math.floor(canvas.height / 2);
-      const sampleSize = 40;
+      const cx = Math.floor(canvas.width / 2);
+      const cy = Math.floor(canvas.height / 2);
+      const size = 40;
 
-      const imageData = context.getImageData(
-        centerX - sampleSize / 2,
-        centerY - sampleSize / 2,
-        sampleSize,
-        sampleSize
-      ).data;
+      const data = context.getImageData(cx - size / 2, cy - size / 2, size, size).data;
 
-      let red = 0;
-      let green = 0;
-      let blue = 0;
-      let count = 0;
+      let r = 0, g = 0, b = 0, count = 0;
 
-      for (let i = 0; i < imageData.length; i += 4) {
-        red += imageData[i];
-        green += imageData[i + 1];
-        blue += imageData[i + 2];
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i];
+        g += data[i + 1];
+        b += data[i + 2];
         count++;
       }
 
-      red = Math.round(red / count);
-      green = Math.round(green / count);
-      blue = Math.round(blue / count);
+      r = Math.round(r / count);
+      g = Math.round(g / count);
+      b = Math.round(b / count);
 
       statusCard.style.display = "block";
-      serverStatus.innerText = "";
-      serverStatus.style.color = "#555";
 
-      let detectedStatus = "ok";
-      let detectedLabel = "Normal result";
-      let detectedMessage = "No significant color change was detected at this time.";
+      let score = r - (g + b) / 2;
 
-      if (red > green + 20 && red > blue + 20) {
-        statusCard.style.background = "#fff8ef";
-        result.innerText = "⚠️ Color change detected";
+      let status = "ok";
+      let label = "Normal";
+      let message = "No significant change detected.";
+
+      if (score > 40) {
+        statusCard.style.background = "#fff3e0";
+        result.innerText = "⚠️ Attention";
         result.style.color = "#FF9800";
-        guidance.innerText = "A noticeable color change was detected. We recommend consulting a doctor for further evaluation.";
-        detectedStatus = "attention";
-        detectedLabel = "Color change detected";
-        detectedMessage = "A noticeable color change was detected. We recommend consulting a doctor for further evaluation.";
+        guidance.innerText = "Please monitor and consider consulting a professional.";
+        status = "attention";
+        label = "Attention";
+        message = "Elevated signal detected.";
+      } else if (score > 20) {
+        statusCard.style.background = "#fffbe6";
+        result.innerText = "🟡 Monitor";
+        result.style.color = "#FFC107";
+        guidance.innerText = "Repeat the scan later for confirmation.";
+        status = "monitor";
+        label = "Monitor";
+        message = "Moderate change detected.";
       } else {
         statusCard.style.background = "#f3fbf4";
-        result.innerText = "✅ Normal result";
+        result.innerText = "✅ Normal";
         result.style.color = "#4CAF50";
-        guidance.innerText = "No significant color change was detected at this time.";
+        guidance.innerText = "No significant change at this time.";
       }
 
       details.innerText = `Patch ID: ${patchId || "Not provided"}`;
@@ -156,12 +148,12 @@
 
       await sendResultToServer({
         patch_id: patchId,
-        status: detectedStatus,
-        label: detectedLabel,
-        message: detectedMessage,
-        red: red,
-        green: green,
-        blue: blue
+        status: status,
+        label: label,
+        message: message,
+        red: r,
+        green: g,
+        blue: b
       });
 
       scanButton.disabled = false;
