@@ -51,6 +51,37 @@ class ScanResultCreate(BaseModel):
 Base.metadata.create_all(bind=engine)
 
 
+LEVEL_CONFIG = {
+    "level_1": {
+        "label": "Level 1 - Normal",
+        "message": "The observed change is within the normal range.",
+        "guidance": "No action is required at this time.",
+        "color": "#2e7d32",
+        "icon": "🟢",
+        "card_color": "#f3fbf4",
+        "disclaimer": "This result is for awareness only and is not a medical diagnosis."
+    },
+    "level_2": {
+        "label": "Level 2 - Monitor",
+        "message": "A change was observed above the baseline.",
+        "guidance": "Repeat the scan and continue monitoring.",
+        "color": "#c49000",
+        "icon": "🟡",
+        "card_color": "#fffbe6",
+        "disclaimer": "This result is for awareness and follow-up only and is not a medical diagnosis."
+    },
+    "level_3": {
+        "label": "Level 3 - Consult Doctor",
+        "message": "The observed change is above the defined threshold.",
+        "guidance": "Please seek further medical review.",
+        "color": "#d32f2f",
+        "icon": "🔴",
+        "card_color": "#fff3f3",
+        "disclaimer": "This result is an early warning indication only and is not a medical diagnosis."
+    }
+}
+
+
 def seed_default_patches():
     db = SessionLocal()
 
@@ -60,8 +91,8 @@ def seed_default_patches():
                 patch_id="PATCH-001",
                 status="level_1",
                 patch_version="v1",
-                message="Patch is ready for scan.",
-                label="Level 1 - Normal"
+                message=LEVEL_CONFIG["level_1"]["message"],
+                label=LEVEL_CONFIG["level_1"]["label"]
             )
         )
 
@@ -71,8 +102,8 @@ def seed_default_patches():
                 patch_id="PATCH-002",
                 status="level_2",
                 patch_version="v1",
-                message="Patch is ready for monitoring flow.",
-                label="Level 2 - Monitor"
+                message=LEVEL_CONFIG["level_2"]["message"],
+                label=LEVEL_CONFIG["level_2"]["label"]
             )
         )
 
@@ -156,30 +187,12 @@ def result_page(patch_id: str):
     patch = get_patch_from_db(patch_id)
 
     if patch:
-        status_styles = {
-            "level_1": {
-                "color": "#2e7d32",
-                "icon": "🟢",
-                "card_color": "#f3fbf4",
-                "disclaimer": "This result is for awareness only and is not a medical diagnosis."
-            },
-            "level_2": {
-                "color": "#c49000",
-                "icon": "🟡",
-                "card_color": "#fffbe6",
-                "disclaimer": "This result is for awareness and follow-up only and is not a medical diagnosis."
-            },
-            "level_3": {
-                "color": "#d32f2f",
-                "icon": "🔴",
-                "card_color": "#fff3f3",
-                "disclaimer": "This result is an early warning indication only and is not a medical diagnosis."
-            }
-        }
-
-        style = status_styles.get(
+        style = LEVEL_CONFIG.get(
             patch["status"],
             {
+                "label": patch["label"],
+                "message": patch["message"],
+                "guidance": "",
                 "color": "#666666",
                 "icon": "ℹ️",
                 "card_color": "#f7f7f7",
@@ -233,8 +246,17 @@ def result_page(patch_id: str):
                         font-size:30px;
                         line-height:1.3;
                     ">
-                        {patch["label"]}
+                        {style["label"]}
                     </h1>
+
+                    <p style="
+                        color:#333;
+                        font-size:16px;
+                        line-height:1.7;
+                        margin:0 0 10px 0;
+                    ">
+                        {style["message"]}
+                    </p>
 
                     <p style="
                         color:#333;
@@ -242,7 +264,7 @@ def result_page(patch_id: str):
                         line-height:1.7;
                         margin:0 0 18px 0;
                     ">
-                        {patch["message"]}
+                        {style["guidance"]}
                     </p>
 
                     <div style="
