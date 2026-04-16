@@ -159,17 +159,55 @@
       const guideWidth = guideRect.width * scaleX;
       const guideHeight = guideRect.height * scaleY;
 
-      const sampleWidth = Math.max(40, Math.round(guideWidth * 0.45));
-      const sampleHeight = Math.max(40, Math.round(guideHeight * 0.45));
+      return {
+        x: Math.max(0, Math.round(guideX)),
+        y: Math.max(0, Math.round(guideY)),
+        width: Math.min(Math.round(guideWidth), canvas.width),
+        height: Math.min(Math.round(guideHeight), canvas.height)
+      };
+    }
 
-      const sampleX = Math.round(guideX + (guideWidth - sampleWidth) / 2);
-      const sampleY = Math.round(guideY + (guideHeight - sampleHeight) / 2);
+    function getMultiPointSampleData(context, sampleArea) {
+      const centerX = sampleArea.x + sampleArea.width / 2;
+      const centerY = sampleArea.y + sampleArea.height / 2;
+
+      const offsetX = sampleArea.width * 0.22;
+      const offsetY = sampleArea.height * 0.22;
+
+      const sampleWidth = Math.max(24, Math.round(sampleArea.width * 0.18));
+      const sampleHeight = Math.max(24, Math.round(sampleArea.height * 0.18));
+
+      const points = [
+        { x: centerX, y: centerY },
+        { x: centerX, y: centerY - offsetY },
+        { x: centerX, y: centerY + offsetY },
+        { x: centerX - offsetX, y: centerY },
+        { x: centerX + offsetX, y: centerY }
+      ];
+
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let count = 0;
+
+      for (const point of points) {
+        const sampleX = Math.max(0, Math.min(canvas.width - sampleWidth, Math.round(point.x - sampleWidth / 2)));
+        const sampleY = Math.max(0, Math.min(canvas.height - sampleHeight, Math.round(point.y - sampleHeight / 2)));
+
+        const data = context.getImageData(sampleX, sampleY, sampleWidth, sampleHeight).data;
+
+        for (let i = 0; i < data.length; i += 4) {
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          count++;
+        }
+      }
 
       return {
-        x: Math.max(0, sampleX),
-        y: Math.max(0, sampleY),
-        width: Math.min(sampleWidth, canvas.width),
-        height: Math.min(sampleHeight, canvas.height)
+        r: Math.round(r / count),
+        g: Math.round(g / count),
+        b: Math.round(b / count)
       };
     }
 
@@ -197,28 +235,11 @@
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       const sampleArea = getGuideSampleArea();
-      const data = context.getImageData(
-        sampleArea.x,
-        sampleArea.y,
-        sampleArea.width,
-        sampleArea.height
-      ).data;
+      const sampledColor = getMultiPointSampleData(context, sampleArea);
 
-      let r = 0;
-      let g = 0;
-      let b = 0;
-      let count = 0;
-
-      for (let i = 0; i < data.length; i += 4) {
-        r += data[i];
-        g += data[i + 1];
-        b += data[i + 2];
-        count++;
-      }
-
-      r = Math.round(r / count);
-      g = Math.round(g / count);
-      b = Math.round(b / count);
+      const r = sampledColor.r;
+      const g = sampledColor.g;
+      const b = sampledColor.b;
 
       const score = Math.round(r - (g + b) / 2);
 
@@ -255,7 +276,7 @@
       result.innerText = title;
       result.style.color = titleColor;
       guidance.innerText = guidanceText;
-      details.innerText = `Patch ID: ${patchId || "Not provided"} | Sample area inside guide box`;
+      details.innerText = `Patch ID: ${patchId || "Not provided"} | Multi-point sample inside guide box`;
       disclaimer.innerText = disclaimerText;
 
       await sendResultToServer({
