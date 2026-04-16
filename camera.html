@@ -107,6 +107,10 @@
     const params = new URLSearchParams(window.location.search);
     const patchId = params.get("patch_id");
 
+    const MIN_BRIGHTNESS = 65;
+    const MAX_BRIGHTNESS = 205;
+    const MAX_BRIGHTNESS_RANGE = 110;
+
     patchInfo.innerText = patchId ? `Patch ID: ${patchId}` : "Patch ID: Not provided";
 
     async function startCamera() {
@@ -189,6 +193,9 @@
       let g = 0;
       let b = 0;
       let count = 0;
+      let brightnessSum = 0;
+      let minBrightness = Infinity;
+      let maxBrightness = -Infinity;
 
       for (const point of points) {
         const sampleX = Math.max(0, Math.min(canvas.width - sampleWidth, Math.round(point.x - sampleWidth / 2)));
@@ -197,9 +204,17 @@
         const data = context.getImageData(sampleX, sampleY, sampleWidth, sampleHeight).data;
 
         for (let i = 0; i < data.length; i += 4) {
-          r += data[i];
-          g += data[i + 1];
-          b += data[i + 2];
+          const red = data[i];
+          const green = data[i + 1];
+          const blue = data[i + 2];
+          const brightness = (red + green + blue) / 3;
+
+          r += red;
+          g += green;
+          b += blue;
+          brightnessSum += brightness;
+          minBrightness = Math.min(minBrightness, brightness);
+          maxBrightness = Math.max(maxBrightness, brightness);
           count++;
         }
       }
@@ -207,8 +222,38 @@
       return {
         r: Math.round(r / count),
         g: Math.round(g / count),
-        b: Math.round(b / count)
+        b: Math.round(b / count),
+        avgBrightness: Math.round(brightnessSum / count),
+        brightnessRange: Math.round(maxBrightness - minBrightness)
       };
+    }
+
+    function getLightingIssue(sampledColor) {
+      if (sampledColor.avgBrightness < MIN_BRIGHTNESS) {
+        return {
+          title: "Lighting too low",
+          guidance: "Please move to a brighter area and scan again.",
+          cardColor: "#fff8ef"
+        };
+      }
+
+      if (sampledColor.avgBrightness > MAX_BRIGHTNESS) {
+        return {
+          title: "Lighting too bright",
+          guidance: "Please reduce glare or move away from strong light and scan again.",
+          cardColor: "#fff8ef"
+        };
+      }
+
+      if (sampledColor.brightnessRange > MAX_BRIGHTNESS_RANGE) {
+        return {
+          title: "Uneven lighting detected",
+          guidance: "Please reduce shadows and keep the lighting more even before scanning again.",
+          cardColor: "#fff8ef"
+        };
+      }
+
+      return null;
     }
 
     async function captureColor() {
@@ -236,6 +281,21 @@
 
       const sampleArea = getGuideSampleArea();
       const sampledColor = getMultiPointSampleData(context, sampleArea);
+      const lightingIssue = getLightingIssue(sampledColor);
+
+      if (lightingIssue) {
+        statusCard.style.background = lightingIssue.cardColor;
+        result.innerText = lightingIssue.title;
+        result.style.color = "#c49000";
+        guidance.innerText = lightingIssue.guidance;
+        details.innerText = `Patch ID: ${patchId || "Not provided"} | Adjust lighting and scan again`;
+        disclaimer.innerText = "A reliable result requires stable and even lighting.";
+        guideFrame.classList.remove("scanning");
+        scanButton.disabled = false;
+        scanButton.style.opacity = "1";
+        scanButton.innerText = "Scan";
+        return;
+      }
 
       const r = sampledColor.r;
       const g = sampledColor.g;
