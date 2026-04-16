@@ -159,15 +159,21 @@ def result_page(patch_id: str):
         status_styles = {
             "level_1": {
                 "color": "#2e7d32",
-                "icon": "🟢"
+                "icon": "🟢",
+                "card_color": "#f3fbf4",
+                "disclaimer": "This result is for awareness only and is not a medical diagnosis."
             },
             "level_2": {
                 "color": "#c49000",
-                "icon": "🟡"
+                "icon": "🟡",
+                "card_color": "#fffbe6",
+                "disclaimer": "This result is for awareness and follow-up only and is not a medical diagnosis."
             },
             "level_3": {
                 "color": "#d32f2f",
-                "icon": "🔴"
+                "icon": "🔴",
+                "card_color": "#fff3f3",
+                "disclaimer": "This result is an early warning indication only and is not a medical diagnosis."
             }
         }
 
@@ -175,7 +181,9 @@ def result_page(patch_id: str):
             patch["status"],
             {
                 "color": "#666666",
-                "icon": "ℹ️"
+                "icon": "ℹ️",
+                "card_color": "#f7f7f7",
+                "disclaimer": "This result is for awareness only."
             }
         )
 
@@ -190,7 +198,7 @@ def result_page(patch_id: str):
         <body style="
             margin:0;
             font-family:-apple-system, BlinkMacSystemFont, sans-serif;
-            background:linear-gradient(135deg, #1e1e2f, #3a3a5f);
+            background:linear-gradient(135deg, #0f1020, #1e1e2f);
             display:flex;
             align-items:center;
             justify-content:center;
@@ -205,43 +213,65 @@ def result_page(patch_id: str):
                 width:90%;
                 max-width:420px;
                 text-align:center;
-                box-shadow:0 15px 40px rgba(0,0,0,0.4);
+                box-shadow:0 15px 40px rgba(0,0,0,0.35);
             ">
-                <div style="font-size:48px; margin-bottom:10px;">{style["icon"]}</div>
-
-                <h1 style="
-                    color:{style["color"]};
-                    margin:0 0 12px 0;
-                    font-size:30px;
-                    line-height:1.3;
-                ">
-                    {patch["label"]}
-                </h1>
-
-                <p style="
-                    color:#333;
-                    font-size:16px;
-                    line-height:1.7;
-                    margin:0 0 20px 0;
-                ">
-                    {patch["message"]}
-                </p>
-
                 <div style="
-                    background:#f5f5f5;
-                    padding:15px;
-                    border-radius:12px;
-                    margin-bottom:10px;
+                    background:{style["card_color"]};
+                    border-radius:18px;
+                    padding:22px;
                 ">
-                    <strong>Patch ID</strong><br>{patch["patch_id"]}
-                </div>
+                    <div style="
+                        font-size:44px;
+                        margin-bottom:10px;
+                    ">
+                        {style["icon"]}
+                    </div>
 
-                <div style="
-                    background:#f5f5f5;
-                    padding:15px;
-                    border-radius:12px;
-                ">
-                    <strong>Version</strong><br>{patch["patch_version"]}
+                    <h1 style="
+                        color:{style["color"]};
+                        margin:0 0 12px 0;
+                        font-size:30px;
+                        line-height:1.3;
+                    ">
+                        {patch["label"]}
+                    </h1>
+
+                    <p style="
+                        color:#333;
+                        font-size:16px;
+                        line-height:1.7;
+                        margin:0 0 18px 0;
+                    ">
+                        {patch["message"]}
+                    </p>
+
+                    <div style="
+                        color:#666;
+                        font-size:14px;
+                        line-height:1.6;
+                        margin:0 0 18px 0;
+                    ">
+                        Patch ID: {patch["patch_id"]}
+                    </div>
+
+                    <div style="
+                        color:#777;
+                        font-size:13px;
+                        line-height:1.6;
+                        margin:0 0 18px 0;
+                    ">
+                        {style["disclaimer"]}
+                    </div>
+
+                    <div style="
+                        background:white;
+                        padding:14px;
+                        border-radius:12px;
+                        color:#444;
+                        font-size:14px;
+                    ">
+                        <strong>Version</strong><br>{patch["patch_version"]}
+                    </div>
                 </div>
             </div>
         </body>
@@ -274,10 +304,22 @@ def result_page(patch_id: str):
             width:90%;
             max-width:420px;
             text-align:center;
+            box-shadow:0 15px 40px rgba(0,0,0,0.35);
         ">
-            <div style="font-size:48px; margin-bottom:10px;">❌</div>
-            <h1 style="color:#d32f2f; margin:0 0 12px 0;">Unknown Patch</h1>
-            <p style="color:#333; margin:0;">Patch ID: {patch_id}</p>
+            <div style="
+                background:#fff5f5;
+                border-radius:18px;
+                padding:22px;
+            ">
+                <div style="font-size:44px; margin-bottom:10px;">❌</div>
+                <h1 style="color:#d32f2f; margin:0 0 12px 0;">Unknown Patch</h1>
+                <p style="color:#333; line-height:1.7; margin:0 0 12px 0;">
+                    The requested patch could not be identified.
+                </p>
+                <div style="color:#666; font-size:14px; line-height:1.6;">
+                    Patch ID: {patch_id}
+                </div>
+            </div>
         </div>
     </body>
     </html>
