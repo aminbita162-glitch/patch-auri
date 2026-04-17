@@ -1,7 +1,8 @@
 from datetime import datetime
+from hashlib import sha256
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, DateTime
@@ -11,6 +12,15 @@ from database import SessionLocal, engine
 
 app = FastAPI()
 Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class Patch(Base):
@@ -82,6 +92,270 @@ LEVEL_CONFIG = {
 }
 
 
+def hash_password(password: str) -> str:
+    return sha256(password.encode("utf-8")).hexdigest()
+
+
+def get_current_user_email(request: Request) -> Optional[str]:
+    return request.cookies.get("patch_auri_user")
+
+
+def get_user_by_email(email: str) -> Optional[User]:
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == email).first()
+    db.close()
+    return user
+
+
+def require_login(request: Request):
+    user_email = get_current_user_email(request)
+    if not user_email:
+        return None
+    return get_user_by_email(user_email)
+
+
+def render_auth_page(title: str, subtitle: str, action: str, button_text: str, alt_text: str, alt_link: str, error: str = "") -> str:
+    error_html = ""
+    if error:
+        error_html = f"""
+        <div style="
+            background:#fff5f5;
+            color:#d32f2f;
+            border-radius:14px;
+            padding:12px;
+            margin-bottom:16px;
+            font-size:14px;
+            line-height:1.6;
+        ">
+            {error}
+        </div>
+        """
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{title}</title>
+    </head>
+    <body style="
+        margin:0;
+        font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+        background:linear-gradient(135deg, #0f1020, #1e1e2f);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        min-height:100vh;
+        padding:20px;
+        box-sizing:border-box;
+    ">
+        <div style="
+            width:90%;
+            max-width:420px;
+            background:white;
+            color:black;
+            border-radius:24px;
+            padding:28px;
+            box-shadow:0 15px 40px rgba(0,0,0,0.35);
+        ">
+            <h1 style="
+                margin:0 0 10px 0;
+                font-size:34px;
+                text-align:center;
+            ">
+                {title}
+            </h1>
+
+            <p style="
+                margin:0 0 22px 0;
+                color:#555;
+                font-size:15px;
+                line-height:1.6;
+                text-align:center;
+            ">
+                {subtitle}
+            </p>
+
+            {error_html}
+
+            <form method="post" action="{action}">
+                <label style="display:block; font-size:14px; color:#444; margin-bottom:8px;">Email</label>
+                <input
+                    type="email"
+                    name="email"
+                    required
+                    style="
+                        width:100%;
+                        box-sizing:border-box;
+                        padding:14px 16px;
+                        border:1px solid #ddd;
+                        border-radius:12px;
+                        font-size:16px;
+                        margin-bottom:16px;
+                    "
+                >
+
+                <label style="display:block; font-size:14px; color:#444; margin-bottom:8px;">Password</label>
+                <input
+                    type="password"
+                    name="password"
+                    required
+                    minlength="6"
+                    style="
+                        width:100%;
+                        box-sizing:border-box;
+                        padding:14px 16px;
+                        border:1px solid #ddd;
+                        border-radius:12px;
+                        font-size:16px;
+                        margin-bottom:18px;
+                    "
+                >
+
+                <button
+                    type="submit"
+                    style="
+                        width:100%;
+                        background:#1e1e2f;
+                        color:white;
+                        border:none;
+                        padding:14px 18px;
+                        border-radius:12px;
+                        font-size:16px;
+                        cursor:pointer;
+                    "
+                >
+                    {button_text}
+                </button>
+            </form>
+
+            <div style="
+                margin-top:18px;
+                text-align:center;
+                font-size:14px;
+                color:#555;
+                line-height:1.6;
+            ">
+                {alt_text}
+                <a href="{alt_link}" style="color:#1e1e2f; font-weight:600; text-decoration:none;">
+                    Open
+                </a>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+
+def render_dashboard(email: str) -> str:
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Patch-Auri Dashboard</title>
+    </head>
+    <body style="
+        margin:0;
+        font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+        background:linear-gradient(135deg, #0f1020, #1e1e2f);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        min-height:100vh;
+        padding:20px;
+        box-sizing:border-box;
+    ">
+        <div style="
+            width:90%;
+            max-width:420px;
+            background:white;
+            color:black;
+            border-radius:24px;
+            padding:28px;
+            box-shadow:0 15px 40px rgba(0,0,0,0.35);
+            text-align:center;
+        ">
+            <h1 style="
+                margin:0 0 10px 0;
+                font-size:34px;
+            ">
+                Patch-Auri
+            </h1>
+
+            <p style="
+                margin:0 0 18px 0;
+                color:#555;
+                font-size:15px;
+                line-height:1.6;
+            ">
+                Signed in as
+            </p>
+
+            <div style="
+                background:#f5f5f5;
+                border-radius:14px;
+                padding:14px;
+                font-size:15px;
+                color:#333;
+                margin-bottom:18px;
+                word-break:break-word;
+            ">
+                {email}
+            </div>
+
+            <a
+                href="/scan/PATCH-001"
+                style="
+                    display:block;
+                    background:#1e1e2f;
+                    color:white;
+                    text-decoration:none;
+                    padding:14px 18px;
+                    border-radius:12px;
+                    font-size:16px;
+                    margin-bottom:12px;
+                "
+            >
+                Start Scan
+            </a>
+
+            <a
+                href="/camera?patch_id=PATCH-001"
+                style="
+                    display:block;
+                    background:#f5f5f5;
+                    color:#1e1e2f;
+                    text-decoration:none;
+                    padding:14px 18px;
+                    border-radius:12px;
+                    font-size:16px;
+                    margin-bottom:12px;
+                "
+            >
+                Open Camera
+            </a>
+
+            <a
+                href="/logout"
+                style="
+                    display:block;
+                    color:#d32f2f;
+                    text-decoration:none;
+                    font-size:15px;
+                    margin-top:8px;
+                "
+            >
+                Log out
+            </a>
+        </div>
+    </body>
+    </html>
+    """
+
+
 def seed_default_patches():
     db = SessionLocal()
 
@@ -134,16 +408,166 @@ def get_patch_from_db(patch_id: str):
 
 
 @app.get("/")
-def home():
-    return {
-        "message": "Patch-Auri backend is running",
-        "usage": "/scan/PATCH-001",
-        "camera": "/camera"
-    }
+def home(request: Request):
+    user = require_login(request)
+    if user:
+        return RedirectResponse(url="/dashboard", status_code=302)
+    return RedirectResponse(url="/login", status_code=302)
+
+
+@app.get("/register", response_class=HTMLResponse)
+def register_page():
+    return render_auth_page(
+        title="Create account",
+        subtitle="Register with your email and password to use Patch-Auri.",
+        action="/register",
+        button_text="Register",
+        alt_text="Already have an account?",
+        alt_link="/login"
+    )
+
+
+@app.post("/register")
+def register_user(
+    email: str = Form(...),
+    password: str = Form(...)
+):
+    clean_email = email.strip().lower()
+    clean_password = password.strip()
+
+    if not clean_email or not clean_password:
+        return HTMLResponse(
+            render_auth_page(
+                title="Create account",
+                subtitle="Register with your email and password to use Patch-Auri.",
+                action="/register",
+                button_text="Register",
+                alt_text="Already have an account?",
+                alt_link="/login",
+                error="Email and password are required."
+            ),
+            status_code=400
+        )
+
+    if len(clean_password) < 6:
+        return HTMLResponse(
+            render_auth_page(
+                title="Create account",
+                subtitle="Register with your email and password to use Patch-Auri.",
+                action="/register",
+                button_text="Register",
+                alt_text="Already have an account?",
+                alt_link="/login",
+                error="Password must be at least 6 characters long."
+            ),
+            status_code=400
+        )
+
+    db = SessionLocal()
+    existing_user = db.query(User).filter(User.email == clean_email).first()
+
+    if existing_user:
+        db.close()
+        return HTMLResponse(
+            render_auth_page(
+                title="Create account",
+                subtitle="Register with your email and password to use Patch-Auri.",
+                action="/register",
+                button_text="Register",
+                alt_text="Already have an account?",
+                alt_link="/login",
+                error="An account with this email already exists."
+            ),
+            status_code=400
+        )
+
+    new_user = User(
+        email=clean_email,
+        password_hash=hash_password(clean_password)
+    )
+    db.add(new_user)
+    db.commit()
+    db.close()
+
+    response = RedirectResponse(url="/dashboard", status_code=302)
+    response.set_cookie(
+        key="patch_auri_user",
+        value=clean_email,
+        httponly=True,
+        samesite="lax"
+    )
+    return response
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page():
+    return render_auth_page(
+        title="Sign in",
+        subtitle="Enter your email and password to continue.",
+        action="/login",
+        button_text="Log in",
+        alt_text="Need a new account?",
+        alt_link="/register"
+    )
+
+
+@app.post("/login")
+def login_user(
+    email: str = Form(...),
+    password: str = Form(...)
+):
+    clean_email = email.strip().lower()
+    clean_password = password.strip()
+
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == clean_email).first()
+    db.close()
+
+    if not user or user.password_hash != hash_password(clean_password):
+        return HTMLResponse(
+            render_auth_page(
+                title="Sign in",
+                subtitle="Enter your email and password to continue.",
+                action="/login",
+                button_text="Log in",
+                alt_text="Need a new account?",
+                alt_link="/register",
+                error="Invalid email or password."
+            ),
+            status_code=400
+        )
+
+    response = RedirectResponse(url="/dashboard", status_code=302)
+    response.set_cookie(
+        key="patch_auri_user",
+        value=clean_email,
+        httponly=True,
+        samesite="lax"
+    )
+    return response
+
+
+@app.get("/logout")
+def logout_user():
+    response = RedirectResponse(url="/login", status_code=302)
+    response.delete_cookie("patch_auri_user")
+    return response
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard_page(request: Request):
+    user = require_login(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    return render_dashboard(user.email)
 
 
 @app.post("/scan-result")
-def save_scan_result(scan_result: ScanResultCreate):
+def save_scan_result(request: Request, scan_result: ScanResultCreate):
+    user = require_login(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+
     db = SessionLocal()
 
     new_result = ScanResultRecord(
@@ -168,12 +592,19 @@ def save_scan_result(scan_result: ScanResultCreate):
 
 
 @app.get("/camera", response_class=HTMLResponse)
-def camera_page():
+def camera_page(request: Request):
+    user = require_login(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
     return FileResponse("camera.html")
 
 
 @app.get("/scan/{patch_id}")
-def scan_patch(patch_id: str):
+def scan_patch(request: Request, patch_id: str):
+    user = require_login(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+
     patch = get_patch_from_db(patch_id)
 
     if not patch:
@@ -183,7 +614,11 @@ def scan_patch(patch_id: str):
 
 
 @app.get("/result/{patch_id}", response_class=HTMLResponse)
-def result_page(patch_id: str):
+def result_page(request: Request, patch_id: str):
+    user = require_login(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+
     patch = get_patch_from_db(patch_id)
 
     if patch:
